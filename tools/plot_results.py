@@ -5,6 +5,7 @@ import csv
 
 
 def main():
+    # Read the benchmark summary and choose the output image path.
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("csv_file", nargs="?", default="benchmarks.csv")
     parser.add_argument("--output", default="performance.png")
@@ -22,6 +23,7 @@ def main():
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
     colors = {"serial": "#555555", "openmp": "#2878b5", "mpi": "#d95319", "hybrid": "#2a9d55"}
     markers = {"serial": "o", "openmp": "s", "mpi": "^", "hybrid": "D"}
+    # Draw one curve per mode; hybrid curves are split by MPI rank count.
     for mode in ("serial", "openmp", "mpi", "hybrid"):
         mode_rows = [row for row in rows if row["mode"] == mode]
         if not mode_rows:
@@ -49,6 +51,7 @@ def main():
                          marker=marker, color=color, linestyle=linestyle, label=name)
             axes[1].plot(x, [float(row["efficiency"]) for row in group],
                          marker=marker, color=color, linestyle=linestyle, label=name)
+    # Reference lines show ideal linear speedup and perfect efficiency.
     max_workers = max([int(row["workers"]) for row in rows] or [1])
     axes[0].plot([1, max_workers], [1, max_workers], "k--", alpha=0.45, label="Ideal")
     axes[0].set(title="Speedup", xlabel="Workers (ranks × threads)", ylabel="T₁ / Tₚ")

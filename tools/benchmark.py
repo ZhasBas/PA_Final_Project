@@ -11,6 +11,7 @@ import sys
 
 
 def integer_list(value):
+    # argparse helper for options such as --threads 1,2,4.
     try:
         result = [int(item) for item in value.split(",") if item.strip()]
         if not result or any(item < 1 for item in result):
@@ -21,6 +22,7 @@ def integer_list(value):
 
 
 def run(command, env):
+    # Run one simulation and extract the elapsed time printed by the C++ executable.
     completed = subprocess.run(command, env=env, check=True, text=True,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     match = re.search(r"elapsed_seconds=([0-9.eE+-]+)", completed.stdout)
@@ -30,6 +32,7 @@ def run(command, env):
 
 
 def main():
+    # Command-line options define a workload and the parallel configurations to compare.
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--exe", default="./build/traffic_sim")
     parser.add_argument("--output", default="benchmarks.csv")
@@ -62,6 +65,7 @@ def main():
 
     base = [args.exe, "--length", str(args.length), "--steps", str(args.steps),
             "--density", str(args.density), "--seed", str(args.seed)]
+    # Encode each test as (mode, MPI ranks, OpenMP threads); serial is the baseline.
     configs = [("serial", 1, 1)]
     if "openmp" in requested:
         configs += [("openmp", 1, n) for n in args.threads]
@@ -78,6 +82,7 @@ def main():
         return command
 
     def execute(config):
+        # Set OpenMP controls consistently and add mpirun only for distributed modes.
         mode, ranks, threads = config
         env = os.environ.copy()
         env["OMP_NUM_THREADS"] = str(threads)
@@ -92,6 +97,7 @@ def main():
             command = command_for(ranks) + command
         return run(command, env)
 
+    # Warm up once, then shuffle each measurement round to reduce order-related bias.
     order_rng = random.Random(args.seed)
     warmup_order = list(configs)
     order_rng.shuffle(warmup_order)
@@ -114,6 +120,7 @@ def main():
                              "repeat": repeat,
                              "elapsed_seconds": f"{elapsed:.9g}"})
 
+    # Summarize repeated timings by median, then derive speedup and efficiency.
     summary = []
     for mode, ranks, threads in configs:
         samples = samples_by_config[(mode, ranks, threads)]

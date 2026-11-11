@@ -1,3 +1,4 @@
+# Build configuration and correctness tests for the traffic simulator.
 cmake_minimum_required(VERSION 3.16)
 project(traffic_flow_simulation LANGUAGES CXX)
 
@@ -13,6 +14,7 @@ else()
 endif()
 
 if(TRAFFIC_ENABLE_OPENMP)
+  # OpenMP is optional; without it, the executable still supports serial mode.
   find_package(OpenMP)
   if(OpenMP_CXX_FOUND)
     target_link_libraries(traffic_sim PRIVATE OpenMP::OpenMP_CXX)
@@ -20,6 +22,7 @@ if(TRAFFIC_ENABLE_OPENMP)
 endif()
 
 if(TRAFFIC_ENABLE_MPI)
+  # MPI adds the distributed modes and is required when explicitly requested.
   find_package(MPI REQUIRED COMPONENTS CXX)
   target_link_libraries(traffic_sim PRIVATE MPI::MPI_CXX)
   # This project uses the C MPI API. Disable obsolete vendor C++ bindings
@@ -29,6 +32,7 @@ if(TRAFFIC_ENABLE_MPI)
 endif()
 
 enable_testing()
+# Tests invoke the program with --verify so parallel states must match serial.
 add_test(NAME sequential_smoke
   COMMAND traffic_sim --mode serial --length 1000 --steps 20 --density 0.2 --verify)
 if(OpenMP_CXX_FOUND)
