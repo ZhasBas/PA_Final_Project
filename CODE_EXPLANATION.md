@@ -90,16 +90,18 @@ The raw CSV preserves individual timings; the summary CSV drives the graphs. Bot
 
 ## 5. Typical end-to-end sequence
 
-```text
-CMake configures and compiles traffic_sim
-        ↓
-CTest or check_modes.sh runs correctness checks (--verify)
-        ↓
-benchmark.py launches comparable serial/OpenMP/MPI/hybrid runs
-        ↓
-raw CSV keeps samples; summary CSV stores medians and derived metrics
-        ↓
-plot_results.py turns the summary CSV into speedup/efficiency graphs
-```
+The files form this practical chain. Each step has a specific job:
 
-For exact commands and the benchmark results already collected for this repository, see `README.md`. A small terminology guide is in `PROJECT_GUIDE.md`.
+1. **`CMakeLists.txt` builds the C++ program.** You run CMake to choose whether OpenMP and MPI are enabled. CMake compiles `src/traffic_sim.cpp` and produces the executable `build-linux-mpi/traffic_sim`. That executable is the actual traffic simulation; the other tools prepare, check, or analyze it.
+
+2. **`tests/check_modes.sh` and CTest check that the simulation is correct.** They launch the executable with fixed inputs and `--verify`. The executable calculates the result for the selected mode, runs the serial version as a reference, and reports whether the final car positions and speeds match. CTest gets its test list from `CMakeLists.txt`; the shell script is a separate, shorter way to run available mode checks.
+
+3. **`tools/benchmark.py` measures how long the executable takes.** It repeatedly launches that same executable with the requested mode, road size, step count, rank count, and thread count. MPI runs are launched through `mpirun`; OpenMP thread counts are passed through environment variables. The program prints its elapsed time, and the Python script collects it. It writes:
+   - a **raw CSV**, with one row per measured run;
+   - a **summary CSV**, with the median time, speedup, and efficiency for each configuration.
+
+4. **`tools/plot_results.py` draws the graphs from the summary CSV.** It does not run the simulation or calculate new timings. It reads the summary produced by `benchmark.py` and saves an image with speedup and efficiency plots.
+
+5. **`results/` holds the saved outputs.** Its CSV files are the benchmark data (`*_raw.csv` are individual runs; the other CSVs are summaries). Its PNG files are the graphs generated from those summaries. These are evidence and analysis outputs, not inputs required to run the simulation.
+
+In short: **CMake builds the simulator → tests ask the simulator to check correctness → the benchmark script runs it many times and saves timing CSVs → the plot script turns the summary CSV into graphs.** The C++ program does the traffic calculation throughout; Python automates runs and presents measurements. For exact commands and existing results, see `README.md`; for basic terminology, see `PROJECT_GUIDE.md`.
