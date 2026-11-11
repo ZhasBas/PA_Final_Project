@@ -14,7 +14,7 @@ All modes update from the previous step's state, so cars do not observe partly u
 ## Files and tools
 
 - `src/traffic_sim.cpp` contains the model, command-line options, serial/OpenMP loops, MPI distribution and boundary exchange, timing, CSV output, and verification.
-- `CMakeLists.txt` configures optional OpenMP/MPI support and defines the CTest correctness checks. `Makefile` provides a simpler build entry point.
+- `CMakeLists.txt` configures optional OpenMP/MPI support and defines the CTest correctness checks.
 - `tools/benchmark.py` runs repeated configurations with the same input, saves every timed sample to a raw CSV, and writes median time, speedup, and efficiency to a summary CSV.
 - `tools/plot_results.py` reads that summary and creates speedup and efficiency graphs. Python runs these helper scripts; it is not part of the simulation kernel. Matplotlib is needed for graphs.
 - `results/` contains the benchmark CSV files and graphs already produced for this project.

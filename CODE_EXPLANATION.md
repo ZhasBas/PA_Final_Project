@@ -1,6 +1,6 @@
 # Code Explanation: Traffic Flow Simulation
 
-This note follows the project from build to simulation, correctness checking, benchmarking, and graph generation. The main simulation is C++; the shell and Python scripts automate building/checking and analyzing runs.
+This note follows the project from build to simulation, correctness checking, benchmarking, and graph generation. The main simulation is C++; CMake builds and tests it, and Python scripts analyze its performance.
 
 ## 1. Build and test files
 
@@ -11,24 +11,6 @@ This note follows the project from build to simulation, correctness checking, be
 3. Registers CTest cases: a serial check; OpenMP checks with one and two threads; MPI checks with two and three ranks; and hybrid checks with two ranks and one or two threads per rank. The tests pass `--verify`, so each parallel result is compared with serial.
 
 The CMake options `TRAFFIC_ENABLE_OPENMP` and `TRAFFIC_ENABLE_MPI` control which features are built. MPI is off by default; see the exact Linux configuration in `README.md`.
-
-### `Makefile`
-
-- `make` (or `make all`) compiles a non-MPI executable to `build/traffic_sim`, using `g++` and OpenMP flags by default.
-- `make mpi` builds a separate MPI-enabled executable at `build/traffic_sim_mpi`, using `mpicxx`.
-- `make check` builds the default executable and runs `tests/check_modes.sh`.
-- `make clean` deletes the local `build/` directory.
-
-The Makefile is a lightweight alternative to CMake. The README's CMake instructions are the tested path for running CTest and all MPI/hybrid modes together.
-
-### `tests/check_modes.sh`
-
-1. Uses strict Bash settings (`set -euo pipefail`), so errors, unset variables, or failed commands stop the check.
-2. Runs serial verification, then OpenMP verification with one and four threads, all with identical length, step count, density, and seed.
-3. If `build/traffic_sim_mpi` exists and `mpirun` is installed, also checks MPI with three ranks and hybrid with three ranks and two threads per rank.
-4. Prints a success message if all available checks finish successfully.
-
-This script complements CTest. Its MPI checks are conditional; CTest from an MPI-enabled CMake build defines its own MPI test matrix.
 
 ## 2. Simulation program: `src/traffic_sim.cpp`
 
@@ -94,7 +76,7 @@ The files form this practical chain. Each step has a specific job:
 
 1. **`CMakeLists.txt` builds the C++ program.** You run CMake to choose whether OpenMP and MPI are enabled. CMake compiles `src/traffic_sim.cpp` and produces the executable `build-linux-mpi/traffic_sim`. That executable is the actual traffic simulation; the other tools prepare, check, or analyze it.
 
-2. **`tests/check_modes.sh` and CTest check that the simulation is correct.** They launch the executable with fixed inputs and `--verify`. The executable calculates the result for the selected mode, runs the serial version as a reference, and reports whether the final car positions and speeds match. CTest gets its test list from `CMakeLists.txt`; the shell script is a separate, shorter way to run available mode checks.
+2. **CTest checks that the simulation is correct.** CTest gets its test list from `CMakeLists.txt` and launches the executable with fixed inputs and `--verify`. The executable calculates the result for the selected mode, runs the serial version as a reference, and reports whether final car positions and speeds match.
 
 3. **`tools/benchmark.py` measures how long the executable takes.** It repeatedly launches that same executable with the requested mode, road size, step count, rank count, and thread count. MPI runs are launched through `mpirun`; OpenMP thread counts are passed through environment variables. The program prints its elapsed time, and the Python script collects it. It writes:
    - a **raw CSV**, with one row per measured run;
@@ -104,4 +86,4 @@ The files form this practical chain. Each step has a specific job:
 
 5. **`results/` holds the saved outputs.** Its CSV files are the benchmark data (`*_raw.csv` are individual runs; the other CSVs are summaries). Its PNG files are the graphs generated from those summaries. These are evidence and analysis outputs, not inputs required to run the simulation.
 
-In short: **CMake builds the simulator → tests ask the simulator to check correctness → the benchmark script runs it many times and saves timing CSVs → the plot script turns the summary CSV into graphs.** The C++ program does the traffic calculation throughout; Python automates runs and presents measurements. For exact commands and existing results, see `README.md`; for basic terminology, see `PROJECT_GUIDE.md`.
+In short: **CMake builds the simulator → CTest asks it to check correctness → the benchmark script runs it many times and saves timing CSVs → the plot script turns the summary CSV into graphs.** The C++ program does the traffic calculation throughout; Python automates runs and presents measurements. For exact commands and existing results, see `README.md`; for basic terminology, see `PROJECT_GUIDE.md`.
